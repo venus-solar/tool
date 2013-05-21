@@ -7,7 +7,6 @@
 
 import sys
 import random
-import binascii
 
 # 0 - 25 = A - Z, 26 - 51 = a - z, 52 - 61 = 0 - 9, 62 = ?
 def getRandomChar():
@@ -23,22 +22,47 @@ def getRandomChar():
         #print(rChar)
         return rChar
 
-inputFileName = ''
-outputFileName = 'result'
+def FindAll(_f, _ba):
+    found = []
+    lastOffset = -1
+    while True:
+        lastOffset += 1
+        lastOffset = _f.find(_ba, lastOffset)
+        if lastOffset != -1:
+            found.append(lastOffset)
+        else:
+            break
+    return found
+
+inputFileName = 'Ift.swf'
+outputFileName = 'Ift_alias.swf'
+inputTableFileName = 'inTable'
+outputTableFileName = 'outRandomTable'
 
 # Read commandline parameter as file input and output
+# python alias.py InputFile InputTable OutputFile OutputTable
+
 if len(sys.argv) < 2:
-        print('Need input file name!\n')
-        sys.exit()
+        print('Use default file names\n')
+elif len(sys.argv) == 2:
+        inputFileName = sys.argv[1]
 elif len(sys.argv) == 3:
-        outputFileName = sys.argv[2]
+        inputFileName = sys.argv[1]
+        inputTableFileName = sys.argv[2]
+elif len(sys.argv) == 4:
+        inputFileName = sys.argv[1]
+        inputTableFileName = sys.argv[2]        
+        OutputFile = sys.argv[3]
+elif len(sys.argv) == 5:
+        inputFileName = sys.argv[1]
+        inputTableFileName = sys.argv[2]        
+        OutputFile = sys.argv[3]
+        outputTableFileName = sys.argv[4]
 
-inputFileName = sys.argv[1]
+print("\n Parsing inputTable ", inputTableFileName + "...... \n")
 
-print("\n Parsing file ", inputFileName + "...... \n")
-
-fI = open(inputFileName, 'r')
-fO = open(outputFileName, 'w')
+fI = open(inputTableFileName, 'r')
+fO = open(outputTableFileName, 'w')
 
 while True:
         line = fI.readline()
@@ -56,6 +80,54 @@ while True:
         abc += '\n'
         #print(abc)
         fO.write(abc)
-print('Parsing done, will write to file ', outputFileName + '\n')
+print('Parsing done, will write random table to ', outputTableFileName + '\n')
+fO.close()
 
+# inputTableFileName -> outputTableFileName
+fI = open(inputFileName, 'rb')
+fO = open(outputFileName, 'wb')
+fInTable = open(inputTableFileName, 'r')
+fOutTable = open(outputTableFileName, 'r')
+
+fC = fI.read()
+fContent = bytearray(fC)
+fI.close()
+
+while True:
+        findList = []
+        findIndex = 0
+        replaceLineBAIndex = 0
+        fContentIndex = 0
+        
+        keyWordLineS = fInTable.readline()
+        keyWordLineSLen = len(keyWordLineS)
+        replaceLineS = fOutTable.readline()
+        replaceLineSLen = len(replaceLineS)
+        if keyWordLineSLen == 0:
+                break
+        keyWordLineBA = bytearray(keyWordLineS.encode())
+        del keyWordLineBA[keyWordLineSLen - 1]
+        replaceLineBA = bytearray(replaceLineS.encode())
+        del replaceLineBA[replaceLineSLen - 1]
+        findList = FindAll(fContent, keyWordLineBA)
+        print(" ", findList, " ")
+        if len(findList) == 0:
+                continue
+        while True:
+                if replaceLineBAIndex ==  len(replaceLineBA) and findIndex == len(findList):
+                        break
+                fContentIndex = findList[findIndex]
+                replaceLineBAIndex = 0
+                while True:
+                        if replaceLineBAIndex ==  len(replaceLineBA):
+                                break
+                        fContent[fContentIndex] = replaceLineBA[replaceLineBAIndex]
+                        fContentIndex += 1
+                        replaceLineBAIndex += 1
+
+                findIndex += 1
+                
+fInTable.close()
+fOutTable.close()
+fO.write(fContent)
 fO.close()
